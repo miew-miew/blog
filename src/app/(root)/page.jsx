@@ -4,7 +4,7 @@ import React from 'react'
 
 export default function Home() {
   return (
-    <div className='min-h-screen px-13'>
+    <div className='min-h-screen p-13 pt-0'>
       <Featured />
       <BlogList />
     </div>

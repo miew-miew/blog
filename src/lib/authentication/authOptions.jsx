@@ -64,5 +64,5 @@ export const authOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET, // Utilisez la clé secrète
+  secret: process.env.AUTH_SECRET, // Utilisez la clé secrète
 };

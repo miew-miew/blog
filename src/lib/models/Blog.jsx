@@ -9,18 +9,21 @@ const BlogSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    content: {
+        type: String,
+        required: true
+    },
     category: {
         type: String,
         required: true
     },
     image: {
         type: String,
-        required: true
     },
     author: {
-      type: mongoose.Schema.Types.ObjectId, // Référence à l'utilisateur
-      ref: "User", // Référence au modèle User
-      required: true,
+        type: mongoose.Schema.Types.ObjectId, // Référence à l'utilisateur
+        ref: "User", // Référence au modèle User
+        required: true,
     },
     date: {
         type: Date,

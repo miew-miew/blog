@@ -37,9 +37,9 @@ export default function Register() {
           router.push('/login')
         }, 2000);
       }
-    } catch (err) {
+    } catch (error) {
       // Gestion des erreurs réseau ou serveur
-      toast.error(err.response?.data?.message || "Une erreur s'est produite lors de l'inscription.");
+      toast.error(error.response?.data?.message || "Une erreur s'est produite lors de l'inscription.");
     }
   };
 

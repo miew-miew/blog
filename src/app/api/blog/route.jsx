@@ -1,69 +1,94 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import { writeFile } from 'fs/promises';
 import path from 'path';
-import BlogModel from "@/lib/models/Blog";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authentication/authOptions";
+import BlogModel from '@/lib/models/Blog';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/authentication/authOptions';
 
 export async function GET(request) {
-    console.log('GET request');
-    return NextResponse.json({ message: 'GET request' });
+    try {
+        // Récupérer tous les blogs depuis la base de données
+        const blogs = await BlogModel.find().populate('author', 'name email'); // Populate pour inclure les informations de l'auteur
+
+        return NextResponse.json(
+            { success: true, data: blogs },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error('Erreur:', error);
+        return NextResponse.json(
+            { success: false, message: 'Erreur lors de la récupération des blogs' },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(request) {
     try {
-        // Récupérer la session côté serveur
         const session = await getServerSession(authOptions);
 
-        // Vérifier si l'utilisateur est connecté
         if (!session || !session.user) {
-            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+            return NextResponse.json(
+                { success: false, message: 'Vous devez être connecté pour créer un blog.' },
+                { status: 401 }
+            );
         }
 
-        // Récupérer les données du formulaire (FormData)
         const formData = await request.formData();
-        const image = formData.get('image'); // Récupérer le fichier image
 
-        // Vérifier si un fichier a été envoyé
-        if (!image) {
-            return NextResponse.json({ error: 'Aucune image fournie' }, { status: 400 });
+        const title = formData.get('title');
+        const description = formData.get('description');
+        const content = formData.get('content'); 
+        const category = formData.get('category');
+        const image = formData.get('image');
+
+        // Validation des champs obligatoires
+        const errors = {};
+        if (!title) errors.title = 'Le titre est obligatoire.';
+        if (!description) errors.description = 'La description est obligatoire.';
+        if (!content) errors.content = 'Le contenu est obligatoire.'; 
+        if (!category) errors.category = 'La catégorie est obligatoire.';
+
+        if (Object.keys(errors).length > 0) {
+            return NextResponse.json(
+                { success: false, message: 'Veuillez fournir tous les données nécessaires.', errors },
+                { status: 400 }
+            );
         }
 
-        // Lire les données binaires de l'image
-        const imageByteData = await image.arrayBuffer();
-        const buffer = Buffer.from(imageByteData);
+        let imgUrl = null;
+        if (image && image instanceof File && image.size > 0) {
+            const imageByteData = await image.arrayBuffer();
+            const buffer = Buffer.from(imageByteData);
+            const timestamp = Date.now();
+            const fileName = `${timestamp}_${image.name}`;
+            const filePath = path.join(process.cwd(), 'public', fileName);
+            await writeFile(filePath, buffer);
+            imgUrl = `/${fileName}`;
+        }
 
-        // Générer un nom de fichier unique avec un timestamp
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${image.name}`;
-
-        // Chemin de destination pour enregistrer l'image
-        const filePath = path.join(process.cwd(), 'public', fileName);
-
-        // Écrire le fichier dans le dossier public
-        await writeFile(filePath, buffer);
-
-        // Générer l'URL de l'image
-        const imgUrl = `/${fileName}`;
-        console.log('Image enregistrée :', imgUrl);
-
-        // Créer l'objet blogData avec l'ID de l'utilisateur
-        const blogData = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            category: formData.get('category'),
-            author: session.user.id, // Utiliser l'ID de l'utilisateur connecté
+        const newBlog = new BlogModel({
+            title,
+            description,
+            content, 
+            category,
+            author: session.user.id,
             image: imgUrl,
-        };
+        });
 
-        // Enregistrer le blog dans la base de données
-        await BlogModel.create(blogData);
-        console.log('Blog enregistré');
+        await newBlog.save();
 
-        // Retourner une réponse de succès
-        return NextResponse.json({ success: true, message: "Blog ajouté!" });
+        console.log('Blog enregistré avec succès:', newBlog);
+
+        return NextResponse.json(
+            { success: true, message: 'Blog créé avec succès!', data: newBlog },
+            { status: 201 }
+        );
     } catch (error) {
-        console.error('Erreur', error);
-        return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 });
+        console.error('Erreur lors de la création du blog:', error);
+        return NextResponse.json(
+            { success: false, message: 'Erreur interne du serveur' },
+            { status: 500 }
+        );
     }
 }

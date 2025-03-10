@@ -14,17 +14,27 @@ export default function UserButton() {
     )
   }
 
+  const handleLogout = (e) => {
+    e.preventDefault()
+    signOut({ callbackUrl: '/' })
+  }
+
   return (
     <div className='navbar-end'>
         {session ? (
           <div className="flex items-center gap-1">
             <div>
-              <button className="btn btn-ghost">
+              <button className="btn btn-ghost py-6">
                 <Link href={'/blog/create-blog'}>Write</Link>
               </button>
             </div>
             <div className="dropdown dropdown-end">
-              <div tabIndex={0} role="button" className="font-semibold btn btn-ghost">
+              <div tabIndex={0} role="button" className="btn btn-ghost py-6">
+                <div className="size-10 rounded-full bg-gray-600 flex items-center justify-center">
+                  <span className="text-xl font-semibold text-gray-200">
+                    {session?.user?.name?.charAt(0)}
+                  </span>
+                </div>
                 {session?.user?.name}
               </div>
               <ul
@@ -33,7 +43,7 @@ export default function UserButton() {
                 <li>
                   {/* Bouton de déconnexion */}
                   <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={handleLogout}
                   >
                     Déconnexion
                   </button>
